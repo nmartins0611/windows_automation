@@ -1,6 +1,6 @@
 ---
 - name: Provision System Software
-  hosts: Windows_Servers
+  hosts: windows_servers
 
   vars_files:
    - app_list.yml
