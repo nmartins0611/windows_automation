@@ -1,0 +1,87 @@
+---
+- 
+  hosts: windows
+  gather_facts: true
+  collections:
+   - ansible.windows
+
+  vars:
+    domain_state: domain
+    workgrp_name: WORKGROUP
+    domain_ou: 
+    domain_admin: administrator
+    domain_admin_pass: '!@mL3g10n@2020'
+
+
+  tasks:
+
+    - name: Deploying webservers on Windows nodes
+      block:
+        - name: Add host to the Windows AD
+          microsoft.ad.membership:
+           dns_domain_name: prometheus.io
+           hostname: "{{ ansible_hostname }}"
+           domain_admin_user: administrator@prometheus.io
+           domain_admin_password: '!@mL3g10n@2020'
+        #  domain_ou_path:  "{{ domain_ou }}" "OU=Windows,OU=Servers,DC=ansible,DC=vagrant"
+           workgroup_name: "{{ workgrp_name }}"
+           state: "{{ domain_state }}"
+           reboot: true
+          tags:
+            - add_domain
+            - never
+
+        - name: Demote Machine to Workgroup
+          microsoft.ad.membership:
+           hostname: "{{ ansible_netbios_name }}"
+           domain_admin_user: administrator@prometheus.io
+           domain_admin_password: '!@mL3g10n@2020'
+           workgroup_name: "{{ workgrp_name }}"
+           state: workgroup
+          tags:
+            - remove_domain
+            - never
+
+        - name: Update Windows nodes
+          ansible.windows.win_updates:
+           category_names:
+             - SecurityUpdates
+             - CriticalUpdates
+             - UpdateRollups
+          register: server_updated
+          tags:
+            - always
+
+    - name: Firewall rule to allow RDP on TCP port 3389
+      win_firewall_rule:
+       name: Remote Desktop
+       localport: 3389
+       action: allow
+       direction: in
+       protocol: tcp
+       profiles: domain,private,public
+       state: present
+       enabled: yes        
+      tags:
+        - add_domain
+        - firewall
+        - never
+
+    - name: Firewall rule to allow RDP on TCP port 5986
+      win_firewall_rule:
+        name: WinRM
+        localport: 5986
+        action: allow
+        direction: in
+        protocol: tcp
+        profiles: domain,private,public
+        state: present
+        enabled: yes        
+      tags:
+        - add_domain
+        - firewall
+        - never
+
+    - name: Reboot host if install requires it
+      ansible.windows.win_reboot:
+      when: server_updated.reboot_required
