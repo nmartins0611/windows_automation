@@ -10,7 +10,9 @@
     workgrp_name: WORKGROUP
     domain_ou: 
     domain_admin: administrator
-    domain_admin_pass: 
+    domain_admin_pass:
+    ansible_hostname:
+    dns_domain_name:
 
 
   tasks:
@@ -19,7 +21,7 @@
       block:
         - name: Add host to the Windows AD
           microsoft.ad.membership:
-           dns_domain_name: prometheus.io
+           dns_domain_name: "{{ dns_domain_name }}"
            hostname: "{{ ansible_hostname }}"
            domain_admin_user: administrator@prometheus.io
            domain_admin_password: "{{ domain_admin_pass: }}"
