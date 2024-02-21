@@ -10,7 +10,7 @@
     workgrp_name: WORKGROUP
     domain_ou: 
     domain_admin: administrator
-    domain_admin_pass: '!@mL3g10n@2020'
+    domain_admin_pass: 
 
 
   tasks:
@@ -22,8 +22,7 @@
            dns_domain_name: prometheus.io
            hostname: "{{ ansible_hostname }}"
            domain_admin_user: administrator@prometheus.io
-           domain_admin_password: '!@mL3g10n@2020'
-        #  domain_ou_path:  "{{ domain_ou }}" "OU=Windows,OU=Servers,DC=ansible,DC=vagrant"
+           domain_admin_password: "{{ domain_admin_pass: }}"
            workgroup_name: "{{ workgrp_name }}"
            state: "{{ domain_state }}"
            reboot: true
@@ -35,7 +34,7 @@
           microsoft.ad.membership:
            hostname: "{{ ansible_netbios_name }}"
            domain_admin_user: administrator@prometheus.io
-           domain_admin_password: '!@mL3g10n@2020'
+           domain_admin_password: "{{ domain_admin_pass: }}"
            workgroup_name: "{{ workgrp_name }}"
            state: workgroup
           tags:
