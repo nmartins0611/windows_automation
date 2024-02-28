@@ -1,40 +1,44 @@
-# Define the remote server details
-$remoteServer = "REMOTE_SERVER_NAME_OR_IP"
-$username = "USERNAME"
-$password = "PASSWORD"
-
-# Define the script block to be executed on the remote server
-$scriptBlock = {
-    # Install IIS
-    Install-WindowsFeature -Name Web-Server -IncludeManagementTools
-
-    # Set up a simple HTML webpage content
-    $htmlContent = @"
-<!DOCTYPE html>
+# Variables
+$remoteServer = "your_remote_server_hostname_or_IP"
+$adminUsername = "your_admin_username"
+$adminPassword = "your_admin_password"
+$certThumbprint = "your_SSL_certificate_thumbprint"
+$websiteName = "SampleWebsite"
+$webpageContent = @"
 <html>
 <head>
-    <title>Sample Page</title>
+    <title>Sample Web Page</title>
 </head>
 <body>
-    <h1>Hello from PowerShell and IIS!</h1>
+    <h1>Welcome to the Sample Website!</h1>
+    <p>This is a sample webpage hosted on IIS.</p>
 </body>
 </html>
 "@
 
-    # Create the directory for the website
-    $webDir = "C:\inetpub\wwwroot\SampleSite"
-    New-Item -Path $webDir -ItemType Directory -Force | Out-Null
+# Set up WinRM for HTTPS communication
+$winrmConfig = @{
+    CertificateThumbprint = $certThumbprint
+    Port = 5986
+    Force = $true
+}
+Invoke-Command -ComputerName $remoteServer -ScriptBlock {
+    Enable-PSRemoting -Force
+    Set-WSManQuickConfig -UseSSL -Force
+    Register-PSSessionConfiguration -Name "PowerShell" @PSBoundParameters -Force
+} -Credential (Get-Credential -Credential $adminUsername)
 
-    # Create and write the HTML content to index.html
-    $htmlContent | Out-File -FilePath "$webDir\index.html" -Force
-
-    # Create a new IIS website
-    New-Website -Name "SampleSite" -PhysicalPath $webDir -Port 8080 -Force
+# Establish a remote PowerShell session
+$session = New-PSSession -ComputerName $remoteServer -Credential (Get-Credential -Credential $adminUsername)
+Invoke-Command -Session $session -ScriptBlock {
+    Import-Module WebAdministration
+    # Create a new website
+    New-Website -Name $using:websiteName -Port 8080 -PhysicalPath "C:\inetpub\wwwroot\$using:websiteName"
+    # Create a new index.html file for the website
+    Set-Content -Path "C:\inetpub\wwwroot\$using:websiteName\index.html" -Value $using:webpageContent
+    # Start the website
+    Start-Website -Name $using:websiteName
 }
 
-# Create a PSCredential object
-$securePassword = ConvertTo-SecureString $password -AsPlainText -Force
-$credential = New-Object System.Management.Automation.PSCredential ($username, $securePassword)
-
-# Execute the script block on the remote server
-Invoke-Command -ComputerName $remoteServer -Credential $credential -ScriptBlock $scriptBlock
+# Clean up the session
+Remove-PSSession $session
