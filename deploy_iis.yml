@@ -1,6 +1,8 @@
 ---
 - name: Install the iis web service
   hosts: windows_servers
+  vars:
+    iis_test_message: "Deployed and configured with Ansible"
 
   tasks:
     - name: Install iis
