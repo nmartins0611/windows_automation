@@ -1,0 +1,23 @@
+---
+- name: Install the iis web service
+  hosts: windows_servers
+  gather_facts: false
+  vars:
+    iis_test_message: "Deployed and configured with Ansible"
+
+  tasks:
+    - name: Install iis
+      ansible.windows.win_feature:
+        name: Web-Server
+        state: absent
+
+    - name: Start iis service
+      ansible.windows.win_service:
+        name: W3Svc
+        state: stopped
+
+    - name: Create website index.html
+      ansible.windows.win_copy:
+        content: "{{ iis_test_message }}"
+        dest: C:\Inetpub\wwwroot\index.html
+        state: absent
