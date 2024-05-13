@@ -1,6 +1,6 @@
 ---
 - name: Apply windows updates
-  hosts: Windows_Servers
+  hosts: windows_servers
   gather_facts: no
   vars:
     initial_reboot: |-
